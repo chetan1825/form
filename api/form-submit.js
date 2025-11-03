@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
     // 1️⃣ Send Thank You Email to the Person
     await resend.emails.send({
-      from: 'FormBot <no-reply@yourdomain.com>',
+      from: 'FormBot <onboarding@resend.dev>',
       to: data.email,
       subject: 'Thank you for submitting the form!',
       html: `
