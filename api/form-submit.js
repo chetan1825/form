@@ -1,55 +1,51 @@
-import { Resend } from "resend";
+import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-// This function handles POST requests from Framer
 export default async function handler(req, res) {
-  // 1. Only allow POST method (Framer sends POST)
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' })
   }
 
   try {
-    // 2. Extract the form data
-    const data = req.body;
+    const data = req.body
 
-    // Framer usually sends keys based on your field names
-    const name = data.Name || data.name || "there";
-    const email = data.email || data.Email;
-    const city = data.City || "";
-    const mobile = data["Mobile Number"] || data.mobileNumber || "";
-    const vehicle = data["Vehicle Type"] || data.vehicleType || "";
-    const radio = data.Radio || "";
+    console.log('Form Data:', data)
 
-    console.log("✅ Form Data Received:", data);
-
-    // 3. Send thank-you email through Resend
+    // 1️⃣ Send Thank You Email to the Person
     await resend.emails.send({
-      from: "Your Brand <noreply@yourdomain.com>", // customize this
-      to: email,
-      subject: "Thank you for submitting the form!",
+      from: 'FormBot <no-reply@yourdomain.com>',
+      to: data.email,
+      subject: 'Thank you for submitting the form!',
       html: `
-        <div style="font-family:Arial,sans-serif;padding:20px;">
-          <h2>Hey ${name},</h2>
-          <p>Thank you for getting in touch! 🚀</p>
-          <p>We’re launching soon and will send updates to <b>${email}</b>.</p>
-          <hr/>
-          <p><b>Your Info:</b></p>
-          <ul>
-            <li>City: ${city}</li>
-            <li>Mobile: ${mobile}</li>
-            <li>Vehicle: ${vehicle}</li>
-            <li>Radio: ${radio}</li>
-          </ul>
-          <p>— Team</p>
-        </div>
+        <h2>Hi ${data.Name || 'there'} 👋</h2>
+        <p>Thanks for reaching out! We’ll get back to you soon on this email: <b>${data.email}</b>.</p>
+        <p>We’re launching soon and will send updates directly to your inbox 🚀</p>
       `,
-    });
+    })
 
-    // 4. Return success to Framer
-    return res.status(200).json({ success: true, message: "Email sent successfully!" });
+    // 2️⃣ Send Notification to You (Fallback Mail)
+    await resend.emails.send({
+      from: 'FormBot <no-reply@yourdomain.com>',
+      to: 'yourfallback@email.com', // 👈 replace with your own
+      subject: 'New Form Submission',
+      html: `
+        <h3>New Submission Received</h3>
+        <ul>
+          <li><b>Name:</b> ${data.Name}</li>
+          <li><b>Mobile:</b> ${data['Mobile Number']}</li>
+          <li><b>City:</b> ${data.City}</li>
+          <li><b>Email:</b> ${data.email}</li>
+          <li><b>Vehicle Type:</b> ${data['Vehicle Type']}</li>
+          <li><b>Radio:</b> ${data.Radio}</li>
+        </ul>
+      `,
+    })
+
+    console.log('✅ Emails sent successfully')
+    return res.status(200).json({ success: true, message: 'Emails sent successfully!' })
   } catch (error) {
-    console.error("❌ Error:", error);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Email sending failed:', error)
+    return res.status(500).json({ success: false, message: 'Server error', error })
   }
 }
